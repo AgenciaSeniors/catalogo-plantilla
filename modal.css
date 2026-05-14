@@ -1,0 +1,225 @@
+/* =====================================================================
+   MODALES — DETALLE PRODUCTO Y OPINIONES
+   Tema claro, identidad Señores
+   ===================================================================== */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 10, 0.65);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+}
+
+.modal-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transform: translateY(20px);
+    transition: transform 0.25s;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-overlay.active .modal-card {
+    transform: translateY(0);
+}
+
+.btn-close-modal {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    z-index: 10;
+    font-size: 1rem;
+    font-weight: 700;
+    transition: all 0.15s;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-close-modal:hover {
+    background: var(--bg-dark);
+    color: #fff;
+}
+
+.modal-image-container {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+
+.modal-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.modal-info-container {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-header-row h2 {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.modal-price-tag {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 800;
+    padding: 7px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+}
+
+.modal-description {
+    margin: 16px 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.valoracion-box {
+    cursor: pointer;
+    background: var(--bg-secondary);
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+    transition: all 0.15s;
+}
+
+.valoracion-box:hover {
+    border-color: var(--text-primary);
+    background: #fff;
+}
+
+.val-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.val-main span:first-child {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.btn-dejar-opinion-principal {
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid var(--bg-dark);
+    color: var(--text-primary);
+    padding: 13px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    font-family: inherit;
+    transition: all 0.15s;
+    font-size: 0.88rem;
+}
+
+.btn-dejar-opinion-principal:hover {
+    background: var(--bg-dark);
+    color: #fff;
+}
+
+/* ===== Modal opinión (dejar) ===== */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 10, 0.65);
+    backdrop-filter: blur(8px);
+    z-index: 2050;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.25s;
+}
+
+.modal.active {
+    opacity: 1;
+}
+
+.modal-content {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+    transform: translateY(20px);
+    transition: transform 0.25s;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal.active .modal-content {
+    transform: translateY(0);
+}
+
+.modal-content h3 {
+    color: var(--text-primary) !important;
+    font-weight: 800 !important;
+    font-family: 'Inter', sans-serif !important;
+    letter-spacing: -0.02em;
+}
+
+.close-btn-float {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    color: var(--text-muted);
+    font-size: 1.8rem;
+    cursor: pointer;
+    line-height: 1;
+    font-weight: 300;
+    transition: color 0.15s;
+}
+
+.close-btn-float:hover {
+    color: var(--danger);
+}
+
+#stars-container span {
+    transition: color 0.15s;
+    padding: 0 4px;
+    color: var(--border-medium) !important;
+}
+
+#stars-container span:hover {
+    color: var(--accent) !important;
+}

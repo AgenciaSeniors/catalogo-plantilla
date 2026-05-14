@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Gerencial | Catálogo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-brand-logo">
+                <img src="senores-logo.svg.png" alt="Señores" />
+            </div>
+            <div class="login-divider"></div>
+            <p class="login-subtitle-top">Panel Gerencial de</p>
+            <h1 class="login-logo" id="login-logo">Mi Negocio</h1>
+
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Correo electrónico</label>
+                    <input type="email" id="email" class="input-stylish" placeholder="correo@ejemplo.com" required autocomplete="username">
+                </div>
+
+                <div class="input-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password" class="input-stylish" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn-big-action" id="btn-login">
+                    INICIAR SESIÓN
+                </button>
+
+                <p id="error-msg" style="color:#ff5252; font-size:0.8rem; margin-top:20px; min-height:20px; text-align:center;"></p>
+            </form>
+
+            <a href="index.html" style="color:#666; font-size:0.8rem; text-decoration:none; display:block; margin-top:30px; border-top:1px solid #2a2a2a; padding-top:15px; text-align:center;">
+                ← Volver al Catálogo
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Cargar nombre del negocio en el título del login
+        (async () => {
+            try {
+                const { data } = await supabaseClient
+                    .from('catalogo_negocios')
+                    .select('nombre, color_acento')
+                    .eq('id', CONFIG.BUSINESS_ID)
+                    .single();
+
+                if (data) {
+                    if (data.nombre) document.getElementById('login-logo').textContent = data.nombre;
+                    // Nota: el login NO aplica el color del cliente para mantener la identidad Señores en azul.
+                    // El color del cliente solo se aplica en el catálogo público y dentro del admin.
+                }
+            } catch (e) {}
+        })();
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('btn-login');
+            const errorMsg = document.getElementById('error-msg');
+
+            btn.textContent = "Verificando...";
+            btn.disabled = true;
+            errorMsg.textContent = "";
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email, password: password
+            });
+
+            if (error) {
+                errorMsg.textContent = "Credenciales inválidas.";
+                btn.textContent = "INICIAR SESIÓN";
+                btn.disabled = false;
+                return;
+            }
+
+            // Verificar que el usuario esté vinculado a este negocio
+            const { data: vinculo } = await supabaseClient
+                .from('catalogo_usuarios_negocio')
+                .select('negocio_id')
+                .eq('user_id', data.user.id)
+                .eq('negocio_id', CONFIG.BUSINESS_ID)
+                .maybeSingle();
+
+            if (!vinculo) {
+                errorMsg.textContent = "No tienes acceso a este negocio.";
+                await supabaseClient.auth.signOut();
+                btn.textContent = "INICIAR SESIÓN";
+                btn.disabled = false;
+                return;
+            }
+
+            window.location.href = "admin.html";
+        });
+    </script>
+</body>
+</html>

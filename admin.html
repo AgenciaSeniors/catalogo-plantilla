@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Gerencial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <header class="admin-header">
+        <div style="display:flex; align-items:center;">
+            <h1 class="admin-title">Panel Gerencial</h1>
+            <span class="admin-badge">ADMIN</span>
+        </div>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <a href="index.html" target="_blank" style="color:#aaa; text-decoration:none; font-size:0.85rem; padding:8px;">
+                <span class="material-icons" style="vertical-align:middle; font-size:1.1rem;">visibility</span> Ver Catálogo
+            </a>
+            <button onclick="cerrarSesion()" style="background:none; border:none; color:#ff5252; cursor:pointer;" title="Salir">
+                <span class="material-icons">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- TABS -->
+    <nav class="admin-tabs">
+        <button class="tab-btn active" data-tab="negocio">
+            <span class="material-icons" style="vertical-align:middle; font-size:1rem;">storefront</span> Mi Negocio
+        </button>
+        <button class="tab-btn" data-tab="categorias">
+            <span class="material-icons" style="vertical-align:middle; font-size:1rem;">category</span> Categorías
+        </button>
+        <button class="tab-btn" data-tab="productos">
+            <span class="material-icons" style="vertical-align:middle; font-size:1rem;">inventory_2</span> Productos
+        </button>
+        <button class="tab-btn" data-tab="opiniones">
+            <span class="material-icons" style="vertical-align:middle; font-size:1rem;">star</span> Opiniones
+        </button>
+    </nav>
+
+    <!-- ================= TAB MI NEGOCIO ================= -->
+    <section id="tab-negocio" class="tab-content active">
+        <div class="card-section">
+            <h3 class="section-heading">
+                <span class="material-icons">storefront</span> Identidad de tu Negocio
+            </h3>
+
+            <form id="form-negocio">
+                <!-- Logo + portada -->
+                <div class="form-row cols-2">
+                    <div>
+                        <label style="display:block; text-align:center; color:#b8b8b8; margin-bottom:10px; font-weight:600; font-size:0.85rem;">LOGO</label>
+                        <label class="upload-circle" for="neg-logo-file">
+                            <img id="neg-logo-preview" src="" alt="" style="display:none;">
+                            <span id="neg-logo-prompt" style="text-align:center; color:#666;">
+                                <span class="material-icons" style="font-size:2rem; display:block;">add_a_photo</span>
+                                <span style="font-size:0.7rem;">Toca para subir</span>
+                            </span>
+                            <input type="file" id="neg-logo-file" accept="image/*" style="display:none;">
+                        </label>
+                    </div>
+
+                    <div>
+                        <label style="display:block; text-align:center; color:#b8b8b8; margin-bottom:10px; font-weight:600; font-size:0.85rem;">FOTO DE PORTADA</label>
+                        <label class="upload-banner" for="neg-portada-file">
+                            <img id="neg-portada-preview" src="" alt="" style="display:none;">
+                            <span id="neg-portada-prompt" style="text-align:center; color:#666;">
+                                <span class="material-icons" style="font-size:2rem; display:block;">image</span>
+                                <span style="font-size:0.75rem;">Sube tu foto de portada</span>
+                            </span>
+                            <input type="file" id="neg-portada-file" accept="image/*" style="display:none;">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Nombre del negocio *</label>
+                    <input type="text" id="neg-nombre" class="input-stylish" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Descripción corta</label>
+                    <textarea id="neg-descripcion" class="input-stylish" rows="2" placeholder="Ej: Repostería artesanal con más de 10 años endulzando momentos."></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label>Color de acento</label>
+                    <input type="color" id="neg-color" class="input-stylish" value="#2929FF" style="height:48px; padding:4px; cursor:pointer;">
+                    <p class="help-text">Color que se aplica a precios y elementos destacados de tu catálogo.</p>
+                </div>
+
+                <!-- HORARIO SEMANAL -->
+                <div class="input-group">
+                    <label>Horarios de atención</label>
+                    <p class="help-text" style="margin-bottom:10px;">Marca los días que abres. Se muestra "Abierto/Cerrado" en vivo en tu catálogo.</p>
+                    <div class="horario-semanal" id="horario-semanal"></div>
+                </div>
+
+                <div class="input-group">
+                    <label>Nota especial de horario <span class="help-text" style="margin:0;">(opcional)</span></label>
+                    <input type="text" id="neg-horario" class="input-stylish" placeholder="Ej: Cerrado del 24 al 31 de diciembre">
+                    <p class="help-text">Texto libre que se muestra en el catálogo si necesitas avisar algo (vacaciones, eventos, etc).</p>
+                </div>
+
+                <div class="form-row cols-2">
+                    <div class="input-group" style="margin:0;">
+                        <label>Teléfono</label>
+                        <input type="tel" id="neg-telefono" class="input-stylish" placeholder="+1 809-000-0000">
+                    </div>
+                    <div class="input-group" style="margin:0;">
+                        <label>WhatsApp <span class="help-text" style="margin:0;">(solo números)</span></label>
+                        <input type="tel" id="neg-whatsapp" class="input-stylish" placeholder="18090000000">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Dirección</label>
+                    <input type="text" id="neg-direccion" class="input-stylish" placeholder="Calle, ciudad...">
+                </div>
+
+                <div class="form-row cols-2">
+                    <div class="input-group" style="margin:0;">
+                        <label>Instagram</label>
+                        <input type="text" id="neg-instagram" class="input-stylish" placeholder="@minegocio">
+                    </div>
+                    <div class="input-group" style="margin:0;">
+                        <label>Facebook</label>
+                        <input type="text" id="neg-facebook" class="input-stylish" placeholder="minegocio o URL completa">
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:10px; margin:18px 0;">
+                    <input type="checkbox" id="neg-opiniones" style="width:18px; height:18px; accent-color:var(--accent);">
+                    <label for="neg-opiniones" style="margin:0; cursor:pointer; color:#ccc;">
+                        Permitir que los clientes dejen opiniones en mis productos
+                    </label>
+                </div>
+
+                <!-- ===== SECCIÓN MONEDAS ===== -->
+                <div class="monedas-section">
+                    <h4 class="monedas-heading">
+                        <span class="material-icons">paid</span>
+                        Monedas y conversión
+                    </h4>
+                    <p class="monedas-help">
+                        Define la moneda principal (en la que escribes los precios de tus productos) y activa otras monedas con su tasa de cambio para que tus clientes puedan ver los precios convertidos.
+                    </p>
+
+                    <div class="input-group">
+                        <label>Moneda principal <span class="help-text" style="margin:0;">(en la que pones los precios)</span></label>
+                        <select id="moneda-base" class="input-stylish">
+                            <!-- Llenado por JS -->
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Monedas adicionales disponibles para tus clientes</label>
+                        <div id="lista-monedas" class="lista-monedas"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-big-action" id="btn-save-negocio">GUARDAR CAMBIOS</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- ================= TAB CATEGORÍAS ================= -->
+    <section id="tab-categorias" class="tab-content">
+        <div class="dashboard-grid">
+            <!-- Form -->
+            <div class="card-section">
+                <h3 class="section-heading">
+                    <span class="material-icons" id="cat-form-icon">add_circle</span>
+                    <span id="cat-form-title">Nueva Categoría</span>
+                </h3>
+
+                <form id="form-categoria">
+                    <input type="hidden" id="cat-edit-id">
+
+                    <div class="form-row cols-2">
+                        <div class="input-group" style="margin:0;">
+                            <label>Ícono <span class="help-text" style="margin:0;">(emoji)</span></label>
+                            <input type="text" id="cat-icono" class="input-stylish" placeholder="🍔" maxlength="4">
+                        </div>
+                        <div class="input-group" style="margin:0;">
+                            <label>Orden</label>
+                            <input type="number" id="cat-orden" class="input-stylish" value="0" min="0">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="cat-nombre" class="input-stylish" placeholder="Ej: Hamburguesas" required>
+                    </div>
+
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button type="submit" class="btn-big-action" id="btn-save-categoria">GUARDAR</button>
+                        <button type="button" id="btn-cancel-categoria" onclick="cancelarEdicionCategoria()" style="display:none; background:transparent; border:1px solid #555; color:#ccc; padding:14px; border-radius:10px; cursor:pointer;">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista -->
+            <div class="card-section">
+                <h3 class="section-heading">
+                    <span class="material-icons">list</span> Tus Categorías
+                </h3>
+                <div id="lista-categorias" class="inventory-list"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= TAB PRODUCTOS ================= -->
+    <section id="tab-productos" class="tab-content">
+        <div class="dashboard-grid">
+            <!-- Form producto -->
+            <div class="upload-zone">
+                <h3 class="section-heading">
+                    <span class="material-icons" id="prod-form-icon">add_circle</span>
+                    <span id="prod-form-title">Nuevo Producto</span>
+                </h3>
+
+                <form id="form-producto">
+                    <input type="hidden" id="edit-id">
+
+                    <div class="input-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="nombre" class="input-stylish" required>
+                    </div>
+
+                    <div class="form-row cols-2">
+                        <div class="input-group" style="margin:0;">
+                            <label>Precio *</label>
+                            <input type="number" step="0.01" id="precio" class="input-stylish" required>
+                        </div>
+                        <div class="input-group" style="margin:0;">
+                            <label>Categoría *</label>
+                            <select id="categoria" class="input-stylish" required>
+                                <option value="" disabled selected>Selecciona...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- PROMOCIONES -->
+                    <div class="promo-box">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                            <input type="checkbox" id="en-oferta" style="width:18px; height:18px;">
+                            <label for="en-oferta" style="margin:0; cursor:pointer; color:var(--text-primary); font-weight:600;">
+                                🔥 Activar oferta / promoción
+                            </label>
+                        </div>
+                        <div id="precio-anterior-wrapper" style="display:none;">
+                            <div class="input-group" style="margin-bottom:6px;">
+                                <label>Precio anterior <span class="help-text" style="margin:0;">(se mostrará tachado)</span></label>
+                                <input type="number" step="0.01" id="precio-anterior" class="input-stylish" placeholder="Ej: 1200">
+                            </div>
+                            <p class="help-text" style="margin:6px 0 0;">💡 Si el precio anterior es mayor al precio actual, se calculará el % de descuento automáticamente.</p>
+                        </div>
+                    </div>
+
+                    <!-- STOCK -->
+                    <div class="form-row cols-2">
+                        <div class="input-group" style="margin:0;">
+                            <label>Estado</label>
+                            <select id="estado" class="input-stylish">
+                                <option value="disponible">Disponible</option>
+                                <option value="agotado">Agotado</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="margin:0;">
+                            <label>Stock <span class="help-text" style="margin:0;">(opcional)</span></label>
+                            <input type="number" min="0" id="stock" class="input-stylish" placeholder="Ej: 3">
+                        </div>
+                    </div>
+                    <p class="help-text" style="margin:-8px 0 16px;">💡 Si pones un número de 1 a 5, se mostrará "Solo quedan X" para crear urgencia.</p>
+
+                    <div class="input-group">
+                        <label>Foto <small style="color:#666; font-weight:normal;">(Opcional al editar)</small></label>
+                        <label class="file-upload-wrapper" for="imagen-file" style="cursor:pointer; position:relative; overflow:hidden; min-height:150px; display:flex; align-items:center; justify-content:center;">
+                            <div id="upload-prompt" style="text-align:center; padding:20px;">
+                                <span class="material-icons" style="font-size:2rem; color:#666; margin-bottom:5px;">cloud_upload</span>
+                                <span class="file-upload-text" style="display:block;">Toca para seleccionar imagen</span>
+                            </div>
+                            <img id="imagen-preview" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:12px;">
+                            <input type="file" id="imagen-file" accept="image/*" style="display:none;">
+                        </label>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Descripción</label>
+                        <textarea id="descripcion" class="input-stylish" rows="2"></textarea>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                        <input type="checkbox" id="destacado" style="width:18px; height:18px; accent-color:var(--accent);">
+                        <label for="destacado" style="margin:0; cursor:pointer; color:#ccc;">Marcar como "Destacado" 🌟</label>
+                    </div>
+
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button type="submit" class="btn-big-action" id="btn-submit">GUARDAR PRODUCTO</button>
+                        <button type="button" id="btn-cancelar" onclick="cancelarEdicion()" style="background:transparent; border:1px solid #555; color:#ccc; padding:14px; border-radius:10px; cursor:pointer; display:none;">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista productos -->
+            <div class="inventory-zone">
+                <div class="admin-search">
+                    <span style="font-size:1.1rem;">🔍</span>
+                    <input type="text" id="buscadorInventario" placeholder="Buscar producto en el inventario...">
+                </div>
+                <h3 class="section-heading">
+                    <span class="material-icons">inventory_2</span> Inventario
+                </h3>
+                <div id="lista-admin" class="inventory-list"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= TAB OPINIONES ================= -->
+    <section id="tab-opiniones" class="tab-content">
+        <div class="card-section">
+            <h3 class="section-heading">
+                <span class="material-icons">star</span> Opiniones de tus Clientes
+            </h3>
+
+            <!-- Bulk actions bar -->
+            <div id="opiniones-bulk-bar" class="bulk-bar" style="display:none;">
+                <div class="bulk-bar-info">
+                    <span class="material-icons">checklist</span>
+                    <span id="bulk-count">0</span> opinión(es) seleccionada(s)
+                </div>
+                <div class="bulk-bar-actions">
+                    <button class="btn-bulk-deselect" onclick="deseleccionarTodasOpiniones()">Cancelar</button>
+                    <button class="btn-bulk-delete" onclick="eliminarOpinionesSeleccionadas()">
+                        <span class="material-icons" style="font-size:1rem; vertical-align:middle;">delete_sweep</span>
+                        Eliminar seleccionadas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selector general -->
+            <div id="opiniones-select-all" class="select-all-bar" style="display:none;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="chk-select-all-opiniones" onchange="toggleSeleccionarTodasOpiniones(this)">
+                    <span style="font-size:0.85rem; color:var(--text-secondary); font-weight:600;">Seleccionar todas</span>
+                </label>
+                <p class="help-text" style="margin:0;">💡 Selecciona las opiniones inapropiadas y bórralas en lote.</p>
+            </div>
+
+            <div id="lista-opiniones" class="inventory-list"></div>
+        </div>
+    </section>
+
+    <script src="admin.js"></script>
+</body>
+</html>

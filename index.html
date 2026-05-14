@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="page-title">Catálogo Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="modal.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <!-- HEADER DINÁMICO (se llena con datos del negocio) -->
+    <header class="hero-negocio">
+        <img id="hero-bg" src="" class="hero-bg-cover" alt="">
+        <div class="dark-overlay"></div>
+
+        <div class="brand-group">
+            <img id="hero-logo" src="" class="logo-unificado" alt="Logo" style="display:none;">
+            <div class="brand-text">
+                <h1 id="hero-nombre">Cargando...</h1>
+                <p id="hero-descripcion" class="hero-desc"></p>
+                <div class="header-info">
+                    <div id="hero-estado" class="estado-badge" style="display:none;">
+                        <span class="estado-dot"></span>
+                        <span id="hero-estado-text">Cargando...</span>
+                    </div>
+                    <div id="hero-horario" class="horario-badge" style="display:none;">
+                        <div style="display:flex; flex-direction:column; text-align:left; line-height:1.2;">
+                            <span style="font-size:0.7rem; opacity:0.8; text-transform:uppercase;">Horario</span>
+                            <span id="hero-horario-text" style="font-size:0.9rem; font-weight:800; letter-spacing:1px;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- BUSCADOR + SELECTOR DE MONEDA -->
+    <div class="search-wrapper">
+        <div class="search-and-currency">
+            <div class="search-box">
+                <span class="search-icon">✦</span>
+                <input type="text" id="search-input" placeholder="Buscar productos...">
+            </div>
+            <div class="currency-wrapper" id="currency-wrapper" style="display:none;">
+                <button class="currency-selector" id="currency-selector" onclick="toggleMenuMoneda(event)" aria-label="Cambiar moneda">
+                    <span class="cur-flag" id="cur-flag">🇨🇺</span>
+                    <span class="cur-code" id="cur-code">CUP</span>
+                    <span class="material-icons cur-chevron">expand_more</span>
+                </button>
+                <div class="currency-menu" id="currency-menu" role="menu"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTROS DINÁMICOS (se llenan con las categorías del negocio) -->
+    <div class="filters-container">
+        <nav class="filters" id="filtros-nav">
+            <button class="filter-btn active" onclick="irAlInicio(this)">🏠 Inicio</button>
+        </nav>
+    </div>
+
+    <!-- CATÁLOGO -->
+    <main class="container">
+        <h3 class="section-title">Nuestro Catálogo</h3>
+        <div id="menu-grid" class="menu-grid"></div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-contacto" id="footer-contacto"></div>
+
+        <!-- CTA SEÑORES: visible en TODOS los catálogos como canal de captación -->
+        <a href="https://wa.me/5359063005?text=%C2%A1Hola%21%20Vi%20un%20cat%C3%A1logo%20digital%20y%20me%20interesa%20tener%20uno%20para%20mi%20negocio."
+           target="_blank"
+           class="cta-senores"
+           aria-label="Contactar con Señores para crear un catálogo digital">
+            <div class="cta-senores-text">
+                <span class="cta-eyebrow">¿TE GUSTÓ ESTE CATÁLOGO?</span>
+                <strong>Creamos uno para tu negocio</strong>
+            </div>
+            <div class="cta-senores-btn">
+                <span class="material-icons">chat</span>
+                WhatsApp
+            </div>
+        </a>
+
+        <div class="footer-branding">
+            <p id="footer-nombre">Mi Negocio</p>
+            <p class="agency-tag">Powered by
+                <a href="https://agenciaseniors.com" target="_blank" class="agency-link">señores</a>
+            </p>
+        </div>
+
+        <a href="login.html" class="admin-button-premium">
+            <span class="material-icons">admin_panel_settings</span> Acceso Gerencial
+        </a>
+    </footer>
+
+    <!-- MODAL DETALLE PRODUCTO -->
+    <div id="modal-detalle" class="modal-overlay" onclick="if(event.target == this) cerrarDetalle()">
+        <div class="modal-card">
+            <div class="btn-close-modal" onclick="cerrarDetalle()">✕</div>
+
+            <div class="modal-image-container">
+                <img id="det-img" src="" alt="" class="modal-img">
+            </div>
+
+            <div class="modal-info-container">
+                <div class="modal-header-row" style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2 id="det-titulo" style="margin:0; font-size:1.5rem;"></h2>
+                    <div id="det-price" class="modal-price-tag"></div>
+                </div>
+
+                <p id="det-desc" class="modal-description"></p>
+
+                <div id="det-stock" class="modal-stock-urgencia" style="display:none;"></div>
+
+                <div id="valoracion-wrapper" class="valoracion-box" onclick="abrirListaOpiniones()">
+                    <div class="val-main">
+                        <span style="color:#888;">Valoración:</span>
+                        <span style="color:#FFD700; font-weight:bold;">★ <span id="det-puntuacion-valor">0.0</span></span>
+                    </div>
+                    <div style="text-align:right; font-size:0.75rem; color:var(--accent); margin-top:4px;">
+                        (Ver reseñas) <span id="det-cantidad-opiniones"></span>
+                    </div>
+                </div>
+
+                <button id="btn-agregar-carrito" class="btn-agregar-carrito" onclick="agregarAlCarritoDesdeModal()">
+                    <span class="material-icons">add_shopping_cart</span>
+                    Agregar al pedido
+                </button>
+
+                <button id="btn-dejar-opinion" class="btn-dejar-opinion-principal" onclick="abrirOpinionDesdeDetalle()">
+                    DEJAR OPINIÓN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DEJAR OPINIÓN -->
+    <div id="modal-opinion" class="modal" onclick="if(event.target == this) cerrarModalOpiniones()">
+        <div class="modal-content" style="padding:30px; text-align:center;">
+            <span class="close-btn-float" onclick="cerrarModalOpiniones()">×</span>
+
+            <h3 style="color:var(--accent); margin-bottom:20px; font-family:'Playfair Display', serif;">
+                Calificar Producto
+            </h3>
+
+            <div class="stars" id="stars-container" style="font-size:3rem; color:#444; cursor:pointer; margin-bottom:20px;">
+                <span data-val="1">★</span><span data-val="2">★</span><span data-val="3">★</span><span data-val="4">★</span><span data-val="5">★</span>
+            </div>
+
+            <input type="text" id="cliente-nombre" placeholder="Tu nombre (Opcional)" class="input-stylish" style="width:100%; margin-bottom:10px;">
+            <textarea id="cliente-comentario" rows="3" placeholder="¿Qué te pareció?" class="input-stylish" style="width:100%; margin-bottom:20px;"></textarea>
+
+            <button class="btn-big-action" id="btn-enviar-opinion" onclick="enviarOpinion()">ENVIAR</button>
+        </div>
+    </div>
+
+    <!-- MODAL LISTA DE OPINIONES -->
+    <div id="modal-lista-opiniones" class="modal-overlay" style="display:none; z-index:2100;" onclick="if(event.target == this) cerrarListaOpiniones()">
+        <div class="modal-card" style="max-height:70vh; display:flex; flex-direction:column;">
+            <div class="btn-close-modal" onclick="cerrarListaOpiniones()">✕</div>
+
+            <h3 style="color:white; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px; font-family:'Playfair Display', serif;">
+                Opiniones de clientes
+            </h3>
+
+            <div id="contenedor-opiniones-full" style="overflow-y:auto; flex:1; padding-right:5px;"></div>
+        </div>
+    </div>
+
+    <!-- ============ CARRITO DE WHATSAPP ============ -->
+
+    <!-- Botón flotante del carrito (aparece cuando tiene items) -->
+    <button id="cart-fab" class="cart-fab" onclick="abrirCarrito()" aria-label="Ver carrito">
+        <span class="material-icons">shopping_cart</span>
+        <span id="cart-fab-badge" class="cart-fab-badge">0</span>
+    </button>
+
+    <!-- Drawer del carrito (panel lateral derecho) -->
+    <div id="cart-drawer" class="cart-drawer" onclick="if(event.target == this) cerrarCarrito()">
+        <div class="cart-drawer-panel">
+            <header class="cart-header">
+                <div>
+                    <h3>Tu pedido</h3>
+                    <p class="cart-header-sub" id="cart-header-sub">0 productos</p>
+                </div>
+                <button class="btn-close-modal" onclick="cerrarCarrito()">✕</button>
+            </header>
+
+            <div class="cart-body" id="cart-body">
+                <!-- Items se renderizan aquí -->
+            </div>
+
+            <footer class="cart-footer" id="cart-footer">
+                <div class="cart-total-row">
+                    <span class="cart-total-label">Total</span>
+                    <span class="cart-total-amount" id="cart-total">$0</span>
+                </div>
+                <button id="cart-send-btn" class="cart-send-btn" onclick="enviarPedidoWhatsApp()">
+                    <span class="material-icons">chat</span>
+                    Enviar pedido por WhatsApp
+                </button>
+                <button class="cart-clear" onclick="vaciarCarrito()">Vaciar carrito</button>
+            </footer>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
