@@ -45,6 +45,9 @@
         <button class="tab-btn" data-tab="opiniones">
             <span class="material-icons" style="vertical-align:middle; font-size:1rem;">star</span> Opiniones
         </button>
+        <button class="tab-btn" data-tab="compartir">
+            <span class="material-icons" style="vertical-align:middle; font-size:1rem;">share</span> Compartir
+        </button>
     </nav>
 
     <!-- ================= TAB MI NEGOCIO ================= -->
@@ -284,15 +287,18 @@
                     <p class="help-text" style="margin:-8px 0 16px;">💡 Si pones un número de 1 a 5, se mostrará "Solo quedan X" para crear urgencia.</p>
 
                     <div class="input-group">
-                        <label>Foto <small style="color:#666; font-weight:normal;">(Opcional al editar)</small></label>
-                        <label class="file-upload-wrapper" for="imagen-file" style="cursor:pointer; position:relative; overflow:hidden; min-height:150px; display:flex; align-items:center; justify-content:center;">
-                            <div id="upload-prompt" style="text-align:center; padding:20px;">
-                                <span class="material-icons" style="font-size:2rem; color:#666; margin-bottom:5px;">cloud_upload</span>
-                                <span class="file-upload-text" style="display:block;">Toca para seleccionar imagen</span>
-                            </div>
-                            <img id="imagen-preview" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:12px;">
-                            <input type="file" id="imagen-file" accept="image/*" style="display:none;">
-                        </label>
+                        <label>Fotos del producto <small style="color:#666; font-weight:normal;">(hasta 5 — la primera es la principal)</small></label>
+
+                        <div id="galeria-grid" class="galeria-grid">
+                            <!-- Slots de imágenes (se renderizan con JS) -->
+                        </div>
+
+                        <input type="file" id="galeria-file-input" accept="image/*" multiple style="display:none;">
+                        <input type="hidden" id="galeria-data" value="[]">
+
+                        <p class="help-text" style="margin-top:8px;">
+                            💡 Arrastra para reordenar. La primera foto es la que verán en el grid del catálogo.
+                        </p>
                     </div>
 
                     <div class="input-group">
@@ -361,6 +367,73 @@
         </div>
     </section>
 
+    <!-- ================= TAB COMPARTIR ================= -->
+    <section id="tab-compartir" class="tab-content">
+        <div class="dashboard-grid">
+
+            <!-- QR del catálogo -->
+            <div class="card-section">
+                <h3 class="section-heading">
+                    <span class="material-icons">qr_code_2</span> Código QR del catálogo
+                </h3>
+                <p class="help-text" style="margin-bottom:18px;">
+                    Imprime este QR y pégalo en tu mostrador, mesas, tarjeta de presentación o flyers. Cuando lo escaneen, abrirá tu catálogo.
+                </p>
+
+                <div class="qr-stage">
+                    <div id="qr-canvas-wrapper" class="qr-canvas-wrapper">
+                        <!-- canvas se inyecta aquí -->
+                    </div>
+                    <div id="qr-business-name" class="qr-business-name"></div>
+                </div>
+
+                <button class="btn-big-action" id="btn-descargar-qr" onclick="descargarQR()" style="margin-top:18px;">
+                    <span class="material-icons" style="vertical-align:middle; font-size:1.1rem;">download</span>
+                    DESCARGAR QR
+                </button>
+            </div>
+
+            <!-- Link directo + redes sociales -->
+            <div class="card-section">
+                <h3 class="section-heading">
+                    <span class="material-icons">link</span> Compartir por link
+                </h3>
+                <p class="help-text" style="margin-bottom:18px;">
+                    Esta es la dirección directa de tu catálogo. Cópiala y compártela con tus clientes por donde quieras.
+                </p>
+
+                <div class="share-url-box">
+                    <input type="text" id="share-url-input" class="input-stylish" readonly>
+                    <button class="btn-copy-url" onclick="copiarURLCatalogo()" title="Copiar">
+                        <span class="material-icons">content_copy</span>
+                    </button>
+                </div>
+
+                <div class="share-buttons-grid">
+                    <button class="share-btn share-whatsapp" onclick="compartirCatalogo('whatsapp')">
+                        <span class="material-icons">chat</span> WhatsApp
+                    </button>
+                    <button class="share-btn share-facebook" onclick="compartirCatalogo('facebook')">
+                        <span class="material-icons">facebook</span> Facebook
+                    </button>
+                    <button class="share-btn share-telegram" onclick="compartirCatalogo('telegram')">
+                        <span class="material-icons">send</span> Telegram
+                    </button>
+                    <button class="share-btn share-email" onclick="compartirCatalogo('email')">
+                        <span class="material-icons">mail</span> Email
+                    </button>
+                </div>
+
+                <p class="help-text" style="margin-top:24px;">
+                    💡 Tip: en Instagram pega el link en tu bio o en una historia con el sticker de "Link".
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Librería para generar QR (cliente) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>

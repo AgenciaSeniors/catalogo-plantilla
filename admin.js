@@ -82,6 +82,7 @@ async function initAdmin() {
     await cargarCategorias();
     await cargarProductos();
     await cargarOpiniones();
+    inicializarCompartir();
 }
 
 // =================== TABS ===================
@@ -153,7 +154,7 @@ async function cargarNegocio() {
 document.addEventListener('change', (e) => {
     if (e.target.id === 'neg-logo-file') previewImage(e.target, 'neg-logo-preview', 'neg-logo-prompt');
     if (e.target.id === 'neg-portada-file') previewImage(e.target, 'neg-portada-preview', 'neg-portada-prompt');
-    if (e.target.id === 'imagen-file') previewImage(e.target, 'imagen-preview', 'upload-prompt');
+    if (e.target.id === 'galeria-file-input') galeriaSubirArchivos(e.target.files);
     if (e.target.id === 'en-oferta') {
         document.getElementById('precio-anterior-wrapper').style.display = e.target.checked ? 'block' : 'none';
     }
@@ -631,11 +632,8 @@ async function guardarProducto() {
     btn.disabled = true;
 
     try {
-        let urlImagen = null;
-        const fileInput = document.getElementById('imagen-file');
-        if (fileInput && fileInput.files.length > 0) {
-            urlImagen = await subirArchivo(fileInput.files[0], 'prod');
-        }
+        // Galería: obtener el array actual del input oculto
+        const galeria = galeriaLeer();
 
         const enOferta = document.getElementById('en-oferta').checked;
         const precioAnteriorRaw = document.getElementById('precio-anterior').value;
@@ -651,10 +649,11 @@ async function guardarProducto() {
             estado: document.getElementById('estado').value || 'disponible',
             categoria_id: parseInt(document.getElementById('categoria').value) || null,
             descripcion: document.getElementById('descripcion').value.trim(),
-            destacado: document.getElementById('destacado').checked
+            destacado: document.getElementById('destacado').checked,
+            imagenes_url: galeria,
+            // imagen_url (singular) refleja la primera imagen para compatibilidad y para usarla en cards
+            imagen_url: galeria.length > 0 ? galeria[0] : null
         };
-
-        if (urlImagen) datos.imagen_url = urlImagen;
 
         const { error } = idEdicion
             ? await supabaseClient.from('catalogo_productos').update(datos).eq('id', idEdicion)
@@ -690,13 +689,14 @@ function prepararEdicion(id) {
     document.getElementById('precio-anterior').value = p.precio_anterior || '';
     document.getElementById('precio-anterior-wrapper').style.display = p.en_oferta ? 'block' : 'none';
 
-    const preview = document.getElementById('imagen-preview');
-    const prompt = document.getElementById('upload-prompt');
-    if (p.imagen_url) {
-        preview.src = p.imagen_url;
-        preview.style.display = 'block';
-        if (prompt) prompt.style.display = 'none';
+    // Cargar galería: usa imagenes_url (array) si existe, si no cae a imagen_url (singular)
+    let imagenes = [];
+    if (Array.isArray(p.imagenes_url) && p.imagenes_url.length > 0) {
+        imagenes = p.imagenes_url.filter(Boolean);
+    } else if (p.imagen_url) {
+        imagenes = [p.imagen_url];
     }
+    galeriaSet(imagenes);
 
     document.getElementById('btn-submit').textContent = "ACTUALIZAR PRODUCTO";
     document.getElementById('btn-cancelar').style.display = "block";
@@ -722,10 +722,7 @@ function cancelarEdicion() {
     document.getElementById('precio-anterior-wrapper').style.display = 'none';
     document.getElementById('estado').value = 'disponible';
 
-    const preview = document.getElementById('imagen-preview');
-    const prompt = document.getElementById('upload-prompt');
-    if (preview) { preview.src = ''; preview.style.display = 'none'; }
-    if (prompt) prompt.style.display = 'block';
+    galeriaSet([]); // vaciar galería
 }
 
 async function toggleDestacado(id, valor) {
@@ -1007,6 +1004,287 @@ function toast(msg, isError = false) {
         t.style.transition = 'opacity 0.3s';
         setTimeout(() => t.remove(), 300);
     }, 2800);
+}
+
+// =================== GALERÍA MULTI-FOTO (editor en form de producto) ===================
+const GALERIA_MAX = 5;
+let galeriaDragIndex = null;
+
+function galeriaLeer() {
+    try {
+        const raw = document.getElementById('galeria-data').value;
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.filter(Boolean) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function galeriaSet(arrUrls) {
+    const arr = (arrUrls || []).filter(Boolean).slice(0, GALERIA_MAX);
+    document.getElementById('galeria-data').value = JSON.stringify(arr);
+    galeriaRenderizar();
+}
+
+function galeriaRenderizar() {
+    const grid = document.getElementById('galeria-grid');
+    if (!grid) return;
+    const urls = galeriaLeer();
+
+    let html = '';
+    urls.forEach((url, idx) => {
+        html += `
+            <div class="galeria-slot has-image" draggable="true" data-idx="${idx}"
+                 ondragstart="galeriaDragStart(event, ${idx})"
+                 ondragover="galeriaDragOver(event)"
+                 ondrop="galeriaDrop(event, ${idx})"
+                 ondragend="galeriaDragEnd(event)">
+                ${idx === 0 ? '<span class="badge-principal">PRINCIPAL</span>' : ''}
+                <img src="${url}" alt="Imagen ${idx + 1}">
+                <button type="button" class="btn-quitar" onclick="galeriaQuitar(${idx})" title="Quitar">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+        `;
+    });
+
+    // Slot de "Añadir" si aún no llegamos al máximo
+    if (urls.length < GALERIA_MAX) {
+        html += `
+            <label class="galeria-slot add-slot" for="galeria-file-input" title="Añadir foto">
+                <span class="material-icons">add_photo_alternate</span>
+            </label>
+        `;
+    }
+
+    grid.innerHTML = html;
+}
+
+async function galeriaSubirArchivos(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    const actuales = galeriaLeer();
+    const disponibles = GALERIA_MAX - actuales.length;
+    if (disponibles <= 0) {
+        toast(`Máximo ${GALERIA_MAX} fotos por producto`, true);
+        return;
+    }
+
+    const aSubir = Array.from(fileList).slice(0, disponibles);
+    const grid = document.getElementById('galeria-grid');
+
+    // Mostrar slots con "Subiendo..." inmediatamente para feedback
+    aSubir.forEach((_, i) => {
+        const tempIdx = actuales.length + i;
+        const tempSlot = document.createElement('div');
+        tempSlot.className = 'galeria-slot has-image';
+        tempSlot.innerHTML = `<div class="upload-progress">Subiendo...</div>`;
+        tempSlot.dataset.uploading = `tmp-${tempIdx}`;
+        grid.insertBefore(tempSlot, grid.querySelector('.add-slot'));
+    });
+
+    // Subir en paralelo
+    try {
+        const urls = await Promise.all(aSubir.map(f => subirArchivo(f, 'prod')));
+        galeriaSet([...actuales, ...urls]);
+
+        // Limpiar el input para permitir re-seleccionar el mismo archivo si lo borraron
+        const inp = document.getElementById('galeria-file-input');
+        if (inp) inp.value = '';
+    } catch (err) {
+        console.error('Error subiendo:', err);
+        toast('Error al subir alguna foto: ' + err.message, true);
+        galeriaRenderizar(); // re-renderizar para quitar los slots temporales
+    }
+}
+
+function galeriaQuitar(idx) {
+    const arr = galeriaLeer();
+    arr.splice(idx, 1);
+    galeriaSet(arr);
+}
+
+function galeriaDragStart(e, idx) {
+    galeriaDragIndex = idx;
+    e.currentTarget.classList.add('dragging');
+    if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+    }
+}
+
+function galeriaDragOver(e) {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+}
+
+function galeriaDrop(e, dropIdx) {
+    e.preventDefault();
+    if (galeriaDragIndex == null || galeriaDragIndex === dropIdx) return;
+    const arr = galeriaLeer();
+    const [moved] = arr.splice(galeriaDragIndex, 1);
+    arr.splice(dropIdx, 0, moved);
+    galeriaSet(arr);
+    galeriaDragIndex = null;
+}
+
+function galeriaDragEnd(e) {
+    if (e.currentTarget) e.currentTarget.classList.remove('dragging');
+    galeriaDragIndex = null;
+}
+
+// =================== TAB COMPARTIR (QR + URL + redes) ===================
+
+function getCatalogoURL() {
+    // Construye la URL pública del catálogo a partir del URL actual del admin
+    // (admin.html -> index.html en la misma carpeta)
+    const u = new URL(window.location.href);
+    u.pathname = u.pathname.replace(/admin\.html$/, 'index.html');
+    if (!u.pathname.endsWith('index.html')) {
+        u.pathname = u.pathname.endsWith('/') ? u.pathname + 'index.html' : u.pathname + '/index.html';
+    }
+    u.search = '';
+    u.hash = '';
+    return u.toString();
+}
+
+function inicializarCompartir() {
+    const url = getCatalogoURL();
+    const inp = document.getElementById('share-url-input');
+    if (inp) inp.value = url;
+
+    // Generar QR
+    renderQR(url);
+
+    // Mostrar nombre del negocio bajo el QR
+    const nameEl = document.getElementById('qr-business-name');
+    if (nameEl) {
+        const nombre = document.getElementById('neg-nombre')?.value?.trim() || 'Mi Negocio';
+        nameEl.textContent = nombre;
+    }
+}
+
+function renderQR(text) {
+    const wrapper = document.getElementById('qr-canvas-wrapper');
+    if (!wrapper || typeof qrcode === 'undefined') return;
+
+    try {
+        // type 0 = auto, ECC 'M' = ~15% redundancia (estándar)
+        const qr = qrcode(0, 'M');
+        qr.addData(text);
+        qr.make();
+        // Tamaño del módulo (cuadradito): 7px da ~240px total
+        wrapper.innerHTML = qr.createImgTag(7, 8);
+        // Aplicar estilos consistentes
+        const img = wrapper.querySelector('img');
+        if (img) {
+            img.style.width = '240px';
+            img.style.height = '240px';
+        }
+    } catch (e) {
+        console.error('Error generando QR:', e);
+        wrapper.innerHTML = '<p style="color:#ef4444;">Error generando QR</p>';
+    }
+}
+
+async function copiarURLCatalogo() {
+    const inp = document.getElementById('share-url-input');
+    if (!inp) return;
+    try {
+        await navigator.clipboard.writeText(inp.value);
+        toast('Link copiado');
+    } catch (e) {
+        inp.select();
+        document.execCommand('copy');
+        toast('Link copiado');
+    }
+}
+
+function compartirCatalogo(red) {
+    const url = getCatalogoURL();
+    const nombre = document.getElementById('neg-nombre')?.value?.trim() || 'mi negocio';
+    const texto = `Mira el catálogo digital de ${nombre}:`;
+    const textoURL = encodeURIComponent(`${texto} ${url}`);
+    const urlEnc = encodeURIComponent(url);
+    const textoEnc = encodeURIComponent(texto);
+
+    const links = {
+        whatsapp: `https://wa.me/?text=${textoURL}`,
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${urlEnc}`,
+        telegram: `https://t.me/share/url?url=${urlEnc}&text=${textoEnc}`,
+        email: `mailto:?subject=${textoEnc}&body=${textoURL}`
+    };
+
+    if (links[red]) {
+        window.open(links[red], '_blank');
+    }
+}
+
+function descargarQR() {
+    const wrapper = document.getElementById('qr-canvas-wrapper');
+    const img = wrapper?.querySelector('img');
+    if (!img) {
+        toast('Genera primero el QR', true);
+        return;
+    }
+
+    // Construir un canvas con el QR + el nombre del negocio abajo
+    const nombre = document.getElementById('neg-nombre')?.value?.trim() || 'Mi Negocio';
+    const filenameSafe = nombre.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    const SIZE = 720;
+    const PADDING = 60;
+    const QR_AREA = SIZE - PADDING * 2;
+    const FOOTER_HEIGHT = 100;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = SIZE;
+    canvas.height = SIZE + FOOTER_HEIGHT;
+    const ctx = canvas.getContext('2d');
+
+    // Fondo blanco
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // QR centrado
+    const qrImg = new Image();
+    qrImg.crossOrigin = 'anonymous';
+    qrImg.onload = () => {
+        ctx.drawImage(qrImg, PADDING, PADDING, QR_AREA, QR_AREA);
+
+        // Texto debajo
+        ctx.fillStyle = '#0a0a0a';
+        ctx.textAlign = 'center';
+        ctx.font = '700 32px Inter, system-ui, sans-serif';
+        ctx.fillText(nombre, SIZE / 2, SIZE + 12);
+
+        // Punto azul Señores como marca
+        ctx.fillStyle = '#2929ff';
+        const nameWidth = ctx.measureText(nombre).width;
+        ctx.beginPath();
+        ctx.arc(SIZE / 2 + nameWidth / 2 + 12, SIZE + 12, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sub-línea
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '500 16px Inter, system-ui, sans-serif';
+        ctx.fillText('CATÁLOGO DIGITAL — escanea el QR', SIZE / 2, SIZE + 50);
+
+        // Descargar
+        canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `qr-${filenameSafe}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast('QR descargado');
+        }, 'image/png');
+    };
+    qrImg.onerror = () => toast('Error generando la imagen', true);
+    qrImg.src = img.src;
 }
 
 // =================== START ===================

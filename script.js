@@ -39,6 +39,8 @@ async function cargarTodo() {
         renderizarMenu(todosLosProductos);
         // Cargar carrito desde localStorage (después de tener todosLosProductos)
         cargarCarrito();
+        // Si la URL trae ?p=<id>, abrir ese producto directamente
+        chequearProductoEnURL();
     } catch (err) {
         console.error("Error general:", err);
         mostrarError("No se pudo cargar el catálogo. Verifica la configuración.");
@@ -237,6 +239,8 @@ async function cargarProductos() {
         .order('destacado', { ascending: false })
         .order('id', { ascending: false });
 
+    // Como `*` ya trae imagenes_url, no necesito tocar el query.
+
     if (error) {
         console.error("Error productos:", error);
         return;
@@ -391,7 +395,8 @@ async function abrirDetalle(id) {
         }
     }
 
-    document.getElementById('det-img').src = productoActual.imagen_url || 'https://via.placeholder.com/500x300/f5f5f7/9ca3af?text=Sin+Imagen';
+    // Renderizar carrusel de imágenes (1 foto -> img simple, varias -> carrusel con dots/flechas)
+    renderCarruselProducto(productoActual);
 
     // Botón "Agregar al pedido" — oculto si agotado o stock=0
     const btnCarrito = document.getElementById('btn-agregar-carrito');
@@ -416,6 +421,13 @@ async function abrirDetalle(id) {
     const modal = document.getElementById('modal-detalle');
     modal.style.display = 'flex';
     setTimeout(() => modal.classList.add('active'), 10);
+
+    // Reflejar el producto abierto en la URL (deep link)
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('p', idNum);
+        window.history.replaceState({}, '', url.pathname + url.search);
+    } catch (e) {}
 }
 
 async function cargarPromedioOpiniones(idNum) {
@@ -443,6 +455,174 @@ function cerrarDetalle() {
     const modal = document.getElementById('modal-detalle');
     modal.classList.remove('active');
     setTimeout(() => modal.style.display = 'none', 300);
+    // Limpiar el ?p= de la URL al cerrar (para no compartir un link "stale")
+    if (window.location.search.includes('p=')) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('p');
+        window.history.replaceState({}, '', url.pathname + (url.search || ''));
+    }
+}
+
+// ====== CARRUSEL MULTI-FOTO EN MODAL DE PRODUCTO ======
+let carruselIndex = 0;
+let carruselImagenes = [];
+
+function obtenerImagenesProducto(p) {
+    // Prioridad: imagenes_url (array) -> imagen_url (singular legacy)
+    if (Array.isArray(p.imagenes_url) && p.imagenes_url.length > 0) {
+        const limpias = p.imagenes_url.filter(Boolean);
+        if (limpias.length > 0) return limpias;
+    }
+    if (p.imagen_url) return [p.imagen_url];
+    return [];
+}
+
+function renderCarruselProducto(producto) {
+    const container = document.getElementById('modal-image-container');
+    if (!container) return;
+
+    const imagenes = obtenerImagenesProducto(producto);
+    carruselImagenes = imagenes;
+    carruselIndex = 0;
+
+    // Si no hay imágenes -> placeholder
+    if (imagenes.length === 0) {
+        container.classList.remove('has-gallery');
+        container.innerHTML = `<img id="det-img" src="https://via.placeholder.com/500x300/f5f5f7/9ca3af?text=Sin+Imagen" alt="" class="modal-img">`;
+        return;
+    }
+
+    // Si solo hay 1 imagen -> img simple (mantiene compatibilidad con código viejo)
+    if (imagenes.length === 1) {
+        container.classList.remove('has-gallery');
+        container.innerHTML = `<img id="det-img" src="${imagenes[0]}" alt="${escapeHTML(producto.nombre)}" class="modal-img">`;
+        return;
+    }
+
+    // Carrusel
+    container.classList.add('has-gallery');
+    const slidesHTML = imagenes.map((url, i) => `
+        <div class="modal-carousel-slide">
+            <img src="${url}" alt="${escapeHTML(producto.nombre)} - foto ${i + 1}" loading="${i === 0 ? 'eager' : 'lazy'}">
+        </div>
+    `).join('');
+
+    const dotsHTML = imagenes.map((_, i) => `
+        <button class="modal-carousel-dot ${i === 0 ? 'active' : ''}" data-idx="${i}" onclick="carruselIr(${i})" aria-label="Foto ${i + 1}"></button>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="modal-carousel">
+            <div class="modal-carousel-track" id="modal-carousel-track">
+                ${slidesHTML}
+            </div>
+            <button class="modal-carousel-arrow prev" onclick="carruselAnterior()" aria-label="Anterior">
+                <span class="material-icons">chevron_left</span>
+            </button>
+            <button class="modal-carousel-arrow next" onclick="carruselSiguiente()" aria-label="Siguiente">
+                <span class="material-icons">chevron_right</span>
+            </button>
+            <div class="modal-carousel-dots" id="modal-carousel-dots">
+                ${dotsHTML}
+            </div>
+        </div>
+    `;
+
+    // Soporte de swipe táctil
+    activarSwipeCarrusel(container);
+    actualizarFlechasCarrusel();
+}
+
+function carruselIr(idx) {
+    if (idx < 0 || idx >= carruselImagenes.length) return;
+    carruselIndex = idx;
+    const track = document.getElementById('modal-carousel-track');
+    if (track) track.style.transform = `translateX(-${idx * 100}%)`;
+
+    document.querySelectorAll('.modal-carousel-dot').forEach((d, i) => {
+        d.classList.toggle('active', i === idx);
+    });
+    actualizarFlechasCarrusel();
+}
+
+function carruselSiguiente() { carruselIr(carruselIndex + 1); }
+function carruselAnterior() { carruselIr(carruselIndex - 1); }
+
+function actualizarFlechasCarrusel() {
+    const prev = document.querySelector('.modal-carousel-arrow.prev');
+    const next = document.querySelector('.modal-carousel-arrow.next');
+    if (prev) prev.disabled = carruselIndex === 0;
+    if (next) next.disabled = carruselIndex === carruselImagenes.length - 1;
+}
+
+function activarSwipeCarrusel(container) {
+    let startX = null;
+    const SWIPE_THRESHOLD = 50;
+
+    container.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+    }, { passive: true });
+
+    container.addEventListener('touchend', (e) => {
+        if (startX == null) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) > SWIPE_THRESHOLD) {
+            if (dx < 0) carruselSiguiente();
+            else carruselAnterior();
+        }
+        startX = null;
+    }, { passive: true });
+}
+
+// ====== COMPARTIR PRODUCTO INDIVIDUAL (deep link) ======
+async function compartirProducto() {
+    if (!productoActual) return;
+
+    // Construir URL con ?p=<id>
+    const url = new URL(window.location.href);
+    url.searchParams.set('p', productoActual.id);
+    const shareUrl = url.toString();
+
+    const titulo = `${productoActual.nombre} — ${negocioInfo?.nombre || 'Catálogo'}`;
+    const precio = formatPrecio(productoActual.precio);
+    const texto = `${productoActual.nombre} · ${precio}\n${productoActual.descripcion || ''}`.trim();
+
+    // Si el sistema soporta share nativo (móviles), usar eso
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: titulo, text: texto, url: shareUrl });
+            return;
+        } catch (e) {
+            // El usuario canceló o falló — caemos al fallback
+            if (e.name === 'AbortError') return;
+        }
+    }
+
+    // Fallback: copiar al portapapeles
+    try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast('Link copiado al portapapeles');
+    } catch (e) {
+        // Último fallback: select + alert
+        prompt('Copia este link:', shareUrl);
+    }
+}
+
+// Si la URL trae ?p=<id>, abrir directamente el modal de ese producto
+function chequearProductoEnURL() {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('p');
+    if (!productId) return;
+
+    const idNum = Number(productId);
+    const existe = todosLosProductos.find(p => p.id === idNum);
+    if (!existe) {
+        console.warn(`Producto ${idNum} no encontrado en el catálogo`);
+        return;
+    }
+
+    // Esperar un tick para que el grid se haya renderizado
+    setTimeout(() => abrirDetalle(idNum), 200);
 }
 
 // 7. NAVEGACIÓN

@@ -110,7 +110,9 @@
         <div class="modal-card">
             <div class="btn-close-modal" onclick="cerrarDetalle()">✕</div>
 
-            <div class="modal-image-container">
+            <div class="modal-image-container" id="modal-image-container">
+                <!-- Si el producto tiene 1 sola foto: <img id="det-img"...>
+                     Si tiene varias: se inyecta un carrusel desde JS -->
                 <img id="det-img" src="" alt="" class="modal-img">
             </div>
 
@@ -139,9 +141,17 @@
                     Agregar al pedido
                 </button>
 
-                <button id="btn-dejar-opinion" class="btn-dejar-opinion-principal" onclick="abrirOpinionDesdeDetalle()">
-                    DEJAR OPINIÓN
-                </button>
+                <div class="modal-actions-row">
+                    <button id="btn-compartir-producto" class="btn-secundario-modal" onclick="compartirProducto()">
+                        <span class="material-icons">share</span>
+                        Compartir
+                    </button>
+
+                    <button id="btn-dejar-opinion" class="btn-secundario-modal" onclick="abrirOpinionDesdeDetalle()">
+                        <span class="material-icons">star_outline</span>
+                        Opinar
+                    </button>
+                </div>
             </div>
         </div>
     </div>

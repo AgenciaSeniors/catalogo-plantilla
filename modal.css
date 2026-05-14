@@ -156,6 +156,42 @@
     color: #fff;
 }
 
+/* Botones secundarios en fila (Compartir + Opinar) */
+.modal-actions-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.btn-secundario-modal {
+    flex: 1;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    color: var(--text-primary);
+    padding: 11px 8px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    letter-spacing: -0.01em;
+}
+
+.btn-secundario-modal:hover {
+    background: var(--bg-secondary);
+    border-color: var(--text-primary);
+}
+
+.btn-secundario-modal .material-icons {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
 /* ===== Modal opinión (dejar) ===== */
 .modal {
     display: none;
