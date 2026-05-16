@@ -83,6 +83,7 @@ async function initAdmin() {
     await cargarProductos();
     await cargarOpiniones();
     inicializarCompartir();
+    galeriaSet([]); // renderiza la galería vacía con el slot "+" para subir fotos
 }
 
 // =================== TABS ===================
@@ -1007,7 +1008,7 @@ function toast(msg, isError = false) {
 }
 
 // =================== GALERÍA MULTI-FOTO (editor en form de producto) ===================
-const GALERIA_MAX = 5;
+const GALERIA_MAX = 3;
 let galeriaDragIndex = null;
 
 function galeriaLeer() {
@@ -1031,6 +1032,9 @@ function galeriaRenderizar() {
     if (!grid) return;
     const urls = galeriaLeer();
 
+    const SVG_X = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+    const SVG_ADD = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
     let html = '';
     urls.forEach((url, idx) => {
         html += `
@@ -1042,7 +1046,7 @@ function galeriaRenderizar() {
                 ${idx === 0 ? '<span class="badge-principal">PRINCIPAL</span>' : ''}
                 <img src="${url}" alt="Imagen ${idx + 1}">
                 <button type="button" class="btn-quitar" onclick="galeriaQuitar(${idx})" title="Quitar">
-                    <span class="material-icons">close</span>
+                    ${SVG_X}
                 </button>
             </div>
         `;
@@ -1052,7 +1056,8 @@ function galeriaRenderizar() {
     if (urls.length < GALERIA_MAX) {
         html += `
             <label class="galeria-slot add-slot" for="galeria-file-input" title="Añadir foto">
-                <span class="material-icons">add_photo_alternate</span>
+                ${SVG_ADD}
+                <span class="add-slot-text">Añadir foto</span>
             </label>
         `;
     }
