@@ -41,6 +41,8 @@ async function cargarTodo() {
         cargarCarrito();
         // Si la URL trae ?p=<id>, abrir ese producto directamente
         chequearProductoEnURL();
+        // Registrar la visita al catálogo (1 vez por sesión)
+        registrarVisitaCatalogo();
     } catch (err) {
         console.error("Error general:", err);
         mostrarError("No se pudo cargar el catálogo. Verifica la configuración.");
@@ -428,6 +430,9 @@ async function abrirDetalle(id) {
         url.searchParams.set('p', idNum);
         window.history.replaceState({}, '', url.pathname + url.search);
     } catch (e) {}
+
+    // Estadística: producto visto
+    registrarEvento('vista_producto', idNum);
 }
 
 async function cargarPromedioOpiniones(idNum) {
@@ -968,6 +973,33 @@ function formatPrecio(precioBase) {
     return `${meta.simbolo}${formateado}`;
 }
 
+// =====================================================================
+// ESTADÍSTICAS — registro de eventos
+// =====================================================================
+
+// Registra un evento en la BD. Silencioso: nunca rompe la experiencia.
+async function registrarEvento(tipo, productoId = null) {
+    try {
+        await supabaseClient.from('catalogo_eventos').insert([{
+            negocio_id: CONFIG.BUSINESS_ID,
+            tipo: tipo,
+            producto_id: productoId
+        }]);
+    } catch (e) {
+        // silencioso — la tabla puede no existir aún (migration_v5 sin correr)
+    }
+}
+
+// Registra la visita al catálogo UNA vez por sesión del navegador
+function registrarVisitaCatalogo() {
+    try {
+        const key = `cat_visita_${CONFIG.BUSINESS_ID}`;
+        if (sessionStorage.getItem(key)) return; // ya contada esta sesión
+        sessionStorage.setItem(key, '1');
+    } catch (e) {}
+    registrarEvento('vista_catalogo');
+}
+
 // 11. UTILIDADES
 function setText(id, t) {
     const el = document.getElementById(id);
@@ -1263,6 +1295,9 @@ function enviarPedidoWhatsApp() {
     const url = `https://wa.me/${numero}?text=${mensaje}`;
 
     window.open(url, '_blank');
+
+    // Estadística: pedido enviado por WhatsApp
+    registrarEvento('pedido_whatsapp');
 
     // Cerrar el carrito (no lo vaciamos automáticamente — quedan los items por si quiere editar y reenviar)
     setTimeout(() => cerrarCarrito(), 400);

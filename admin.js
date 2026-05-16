@@ -95,6 +95,8 @@ function setupTabs() {
             document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById('tab-' + tab).classList.add('active');
+            // Cargar estadísticas al entrar a esa pestaña (datos frescos cada vez)
+            if (tab === 'estadisticas') cargarEstadisticas();
         });
     });
 }
@@ -1134,6 +1136,118 @@ function galeriaDrop(e, dropIdx) {
 function galeriaDragEnd(e) {
     if (e.currentTarget) e.currentTarget.classList.remove('dragging');
     galeriaDragIndex = null;
+}
+
+// =================== SEÑORES AI — descripción con IA ===================
+async function generarDescripcionIA() {
+    const nombre = document.getElementById('nombre').value.trim();
+    if (!nombre) {
+        toast('Escribe primero el nombre del producto', true);
+        document.getElementById('nombre').focus();
+        return;
+    }
+
+    const btn = document.getElementById('btn-ia-descripcion');
+    const txtEl = btn.querySelector('.btn-ia-text');
+    const textoOriginal = txtEl.textContent;
+    btn.disabled = true;
+    btn.classList.add('generando');
+    txtEl.textContent = 'Generando...';
+
+    try {
+        // Categoría seleccionada (sin el emoji del inicio)
+        let categoria = '';
+        const catSelect = document.getElementById('categoria');
+        if (catSelect && catSelect.value) {
+            const opt = catSelect.selectedOptions[0];
+            if (opt) categoria = opt.textContent.replace(/^\S+\s/, '').trim();
+        }
+        const negocio = (document.getElementById('neg-nombre').value || '').trim();
+
+        const { data, error } = await supabaseClient.functions.invoke('generar-descripcion', {
+            body: { nombre, categoria, negocio }
+        });
+
+        if (error) throw error;
+        if (data && data.error) throw new Error(data.error);
+
+        if (data && data.descripcion) {
+            document.getElementById('descripcion').value = data.descripcion;
+            toast('Descripción generada con IA ✨');
+        } else {
+            throw new Error('Respuesta vacía de la IA');
+        }
+    } catch (err) {
+        console.error('Señores AI:', err);
+        toast('No se pudo generar. ¿Está desplegada la función de IA?', true);
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('generando');
+        txtEl.textContent = textoOriginal;
+    }
+}
+
+// =================== TAB ESTADÍSTICAS ===================
+async function cargarEstadisticas() {
+    const loading = document.getElementById('stats-loading');
+    const content = document.getElementById('stats-content');
+    if (!loading || !content) return;
+
+    loading.style.display = 'block';
+    loading.textContent = '⟳ Cargando estadísticas...';
+    content.style.display = 'none';
+
+    try {
+        const { data, error } = await supabaseClient.rpc('catalogo_estadisticas', {
+            p_negocio_id: CONFIG.BUSINESS_ID
+        });
+
+        if (error) throw error;
+
+        const s = data || {};
+
+        document.getElementById('stat-visitas-total').textContent = s.visitas_total || 0;
+        document.getElementById('stat-visitas-semana').textContent = `${s.visitas_semana || 0} esta semana`;
+        document.getElementById('stat-pedidos-total').textContent = s.pedidos_total || 0;
+        document.getElementById('stat-pedidos-semana').textContent = `${s.pedidos_semana || 0} esta semana`;
+        document.getElementById('stat-vistas-producto').textContent = s.vistas_producto_total || 0;
+        document.getElementById('stat-opiniones-promedio').textContent = Number(s.opiniones_promedio || 0).toFixed(1);
+        document.getElementById('stat-opiniones-total').textContent = `${s.opiniones_total || 0} opiniones`;
+
+        // Top productos
+        const topCont = document.getElementById('stats-top-productos');
+        const top = s.top_productos || [];
+        if (top.length === 0) {
+            topCont.innerHTML = `
+                <div class="empty-state" style="padding:24px;">
+                    <span class="material-icons">bar_chart</span>
+                    <h4>Aún no hay datos</h4>
+                    <p>Cuando tus clientes vean productos, aparecerán aquí.</p>
+                </div>`;
+        } else {
+            const maxVistas = Math.max(...top.map(t => t.vistas));
+            topCont.innerHTML = top.map((t, i) => {
+                const pct = maxVistas > 0 ? Math.round((t.vistas / maxVistas) * 100) : 0;
+                return `
+                    <div class="stats-top-row">
+                        <span class="stats-top-rank">${i + 1}</span>
+                        <div class="stats-top-info">
+                            <span class="stats-top-nombre">${escapeHTML(t.nombre || 'Producto')}</span>
+                            <div class="stats-top-barra"><div class="stats-top-barra-fill" style="width:${pct}%"></div></div>
+                        </div>
+                        <span class="stats-top-vistas">${t.vistas}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        loading.style.display = 'none';
+        content.style.display = 'block';
+    } catch (err) {
+        console.error('Error estadísticas:', err);
+        loading.innerHTML = `<p style="color:#ef4444;">No se pudieron cargar las estadísticas.<br>
+            <span style="font-size:0.8rem; color:#9ca3af;">¿Corriste el migration_v5.sql en Supabase?</span></p>`;
+    }
 }
 
 // =================== TAB COMPARTIR (QR + URL + redes) ===================

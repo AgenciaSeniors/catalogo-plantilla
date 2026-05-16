@@ -1625,6 +1625,203 @@ input[type="color"] {
 }
 
 /* =====================================================================
+   SEÑORES AI — botón generar descripción
+   ===================================================================== */
+
+.label-con-accion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 7px;
+    gap: 10px;
+}
+
+.label-con-accion label {
+    margin-bottom: 0;
+}
+
+.btn-ia {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #2929ff 0%, #6d28d9 100%);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 6px 12px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    box-shadow: 0 2px 8px rgba(41, 41, 255, 0.3);
+    white-space: nowrap;
+}
+
+.btn-ia:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(109, 40, 217, 0.4);
+}
+
+.btn-ia:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+    transform: none;
+}
+
+.btn-ia-icon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+.btn-ia.generando .btn-ia-icon {
+    animation: iaSpin 1s linear infinite;
+}
+
+@keyframes iaSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* =====================================================================
+   ESTADÍSTICAS
+   ===================================================================== */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+@media(min-width: 700px) {
+    .stats-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.stat-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 16px;
+    text-align: center;
+    box-shadow: var(--shadow-xs);
+}
+
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+}
+
+.stat-icon .material-icons { font-size: 1.4rem; color: #fff; }
+
+.stat-icon-azul    { background: #2929ff; }
+.stat-icon-verde   { background: #25D366; }
+.stat-icon-naranja { background: #f59e0b; }
+.stat-icon-oro     { background: #d4af37; }
+
+.stat-valor {
+    font-size: 1.9rem;
+    font-weight: 900;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-top: 6px;
+}
+
+.stat-extra {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+    font-weight: 500;
+}
+
+.stats-subtitulo {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+}
+
+.stats-top-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.stats-top-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+}
+
+.stats-top-rank {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--bg-dark);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stats-top-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.stats-top-nombre {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stats-top-barra {
+    height: 6px;
+    background: var(--bg-secondary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.stats-top-barra-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.stats-top-vistas {
+    font-weight: 800;
+    color: var(--accent);
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+/* =====================================================================
    COMPARTIR (QR + URL + redes)
    ===================================================================== */
 

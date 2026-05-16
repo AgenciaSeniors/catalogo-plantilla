@@ -45,6 +45,9 @@
         <button class="tab-btn" data-tab="opiniones">
             <span class="material-icons" style="vertical-align:middle; font-size:1rem;">star</span> Opiniones
         </button>
+        <button class="tab-btn" data-tab="estadisticas">
+            <span class="material-icons" style="vertical-align:middle; font-size:1rem;">insights</span> Estadísticas
+        </button>
         <button class="tab-btn" data-tab="compartir">
             <span class="material-icons" style="vertical-align:middle; font-size:1rem;">share</span> Compartir
         </button>
@@ -302,8 +305,14 @@
                     </div>
 
                     <div class="input-group">
-                        <label>Descripción</label>
-                        <textarea id="descripcion" class="input-stylish" rows="2"></textarea>
+                        <div class="label-con-accion">
+                            <label>Descripción</label>
+                            <button type="button" class="btn-ia" id="btn-ia-descripcion" onclick="generarDescripcionIA()">
+                                <svg class="btn-ia-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.39 7.21L22 12l-7.61 2.79L12 22l-2.39-7.21L2 12l7.61-2.79z"/></svg>
+                                <span class="btn-ia-text">Generar con IA</span>
+                            </button>
+                        </div>
+                        <textarea id="descripcion" class="input-stylish" rows="3"></textarea>
                     </div>
 
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
@@ -364,6 +373,54 @@
             </div>
 
             <div id="lista-opiniones" class="inventory-list"></div>
+        </div>
+    </section>
+
+    <!-- ================= TAB ESTADÍSTICAS ================= -->
+    <section id="tab-estadisticas" class="tab-content">
+        <div class="card-section">
+            <h3 class="section-heading">
+                <span class="material-icons">insights</span> Estadísticas de tu Catálogo
+            </h3>
+            <p class="help-text" style="margin-bottom:20px;">
+                Datos de actividad de tus clientes en el catálogo. Se actualizan en tiempo real.
+            </p>
+
+            <div id="stats-loading" style="text-align:center; padding:30px; color:#9ca3af;">⟳ Cargando estadísticas...</div>
+
+            <div id="stats-content" style="display:none;">
+                <!-- Tarjetas de números clave -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-azul"><span class="material-icons">visibility</span></div>
+                        <div class="stat-valor" id="stat-visitas-total">0</div>
+                        <div class="stat-label">Visitas totales</div>
+                        <div class="stat-extra" id="stat-visitas-semana">0 esta semana</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-verde"><span class="material-icons">shopping_cart</span></div>
+                        <div class="stat-valor" id="stat-pedidos-total">0</div>
+                        <div class="stat-label">Pedidos por WhatsApp</div>
+                        <div class="stat-extra" id="stat-pedidos-semana">0 esta semana</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-naranja"><span class="material-icons">touch_app</span></div>
+                        <div class="stat-valor" id="stat-vistas-producto">0</div>
+                        <div class="stat-label">Productos vistos</div>
+                        <div class="stat-extra">clics en productos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-oro"><span class="material-icons">star</span></div>
+                        <div class="stat-valor" id="stat-opiniones-promedio">0.0</div>
+                        <div class="stat-label">Calificación promedio</div>
+                        <div class="stat-extra" id="stat-opiniones-total">0 opiniones</div>
+                    </div>
+                </div>
+
+                <!-- Top productos -->
+                <h4 class="stats-subtitulo">🏆 Top 5 productos más vistos</h4>
+                <div id="stats-top-productos" class="stats-top-list"></div>
+            </div>
         </div>
     </section>
 
