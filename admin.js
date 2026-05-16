@@ -1138,55 +1138,6 @@ function galeriaDragEnd(e) {
     galeriaDragIndex = null;
 }
 
-// =================== SEÑORES AI — descripción con IA ===================
-async function generarDescripcionIA() {
-    const nombre = document.getElementById('nombre').value.trim();
-    if (!nombre) {
-        toast('Escribe primero el nombre del producto', true);
-        document.getElementById('nombre').focus();
-        return;
-    }
-
-    const btn = document.getElementById('btn-ia-descripcion');
-    const txtEl = btn.querySelector('.btn-ia-text');
-    const textoOriginal = txtEl.textContent;
-    btn.disabled = true;
-    btn.classList.add('generando');
-    txtEl.textContent = 'Generando...';
-
-    try {
-        // Categoría seleccionada (sin el emoji del inicio)
-        let categoria = '';
-        const catSelect = document.getElementById('categoria');
-        if (catSelect && catSelect.value) {
-            const opt = catSelect.selectedOptions[0];
-            if (opt) categoria = opt.textContent.replace(/^\S+\s/, '').trim();
-        }
-        const negocio = (document.getElementById('neg-nombre').value || '').trim();
-
-        const { data, error } = await supabaseClient.functions.invoke('generar-descripcion', {
-            body: { nombre, categoria, negocio }
-        });
-
-        if (error) throw error;
-        if (data && data.error) throw new Error(data.error);
-
-        if (data && data.descripcion) {
-            document.getElementById('descripcion').value = data.descripcion;
-            toast('Descripción generada con IA ✨');
-        } else {
-            throw new Error('Respuesta vacía de la IA');
-        }
-    } catch (err) {
-        console.error('Señores AI:', err);
-        toast('No se pudo generar. ¿Está desplegada la función de IA?', true);
-    } finally {
-        btn.disabled = false;
-        btn.classList.remove('generando');
-        txtEl.textContent = textoOriginal;
-    }
-}
-
 // =================== TAB ESTADÍSTICAS ===================
 async function cargarEstadisticas() {
     const loading = document.getElementById('stats-loading');
