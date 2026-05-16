@@ -301,13 +301,20 @@ body {
 
 .horizontal-scroll {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(2, 1fr); /* móvil: SIEMPRE 2 por fila */
+    gap: 12px;
 }
 
-@media(min-width: 768px) {
+@media(min-width: 600px) {
     .horizontal-scroll {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        grid-template-columns: repeat(3, 1fr); /* tablet: 3 por fila */
+        gap: 16px;
+    }
+}
+
+@media(min-width: 920px) {
+    .horizontal-scroll {
+        grid-template-columns: repeat(4, 1fr); /* desktop: 4 por fila */
         gap: 20px;
     }
 }
